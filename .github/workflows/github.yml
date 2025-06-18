@@ -40,72 +40,53 @@ jobs:
             shopt -s extglob
             pre-commit run \
               --color never \
-              --files !(${PRE_COMMIT_FILE}) |&
+              --all-files |&
               tee "${PRE_COMMIT_FILE}"
             shopt -u extglob
-        # - name: Post scans as PR comment
-        #   uses: actions/github-script@v7
-        #   if: always()
-        #   continue-on-error: true
-        #   with:
-        #     script: |
-        #       const fs = require('fs');
-        #       const readBuildOutput = (filePath) => fs.readFileSync(filePath, 'utf8');
-        #       const testOutputFile = process.env.PRE_COMMIT_FILE;
-  
-        #       let buildOutput = readBuildOutput(testOutputFile);
-        #       let cutIndex = buildOutput.lastIndexOf('\nEnvironment');
-  
-        #       if (cutIndex === -1) {
-        #         buildOutput = readBuildOutput(buildStdOutErrFile);
-        #         cutIndex = buildOutput.lastIndexOf('\nEnvironment');
-        #       }
-        #       const githubWorkflowRunUrl = process.env.GITHUB_WORKFLOW_RUN_URL;
-        #       const githubRunNumber = process.env.GITHUB_RUN_NUMBER;
-        #       const githubRunAttempt = process.env.GITHUB_RUN_ATTEMPT;
-  
-        #       const filteredOutput = cutIndex !== -1 ? buildOutput.slice(cutIndex + 1) : buildOutput;
-        #       const lines = filteredOutput.split('\n').filter(line => line.trim() !== '');
-        #       const tableHeader = '| Environment | Status | Duration |';
-        #       const tableRows = lines.slice(1, -1).map(line => {
-        #         const columns = line.split(/\s{2,}/).map(col => col.trim());
-        #         columns[1] = outcomeEmoji(columns[1]);
-        #         return `| ${columns.join(' | ')} |`;
-        #       });
-        #       const summaryLine = buildOutput.split('\n')
-        #         .find(line => line.startsWith('=') && line.includes(' in '))
-        #         ?.replace(/=/g, '').trim();
-  
-        #       const decoratedSummaryLine = summaryLine?.includes('failed')
-        #         ? `:rotating_light: ${summaryLine} :rotating_light:`
-        #         : summaryLine?.includes('succeeded')
-        #         ? `:sparkles: ${summaryLine} :sparkles:`
-        #         : summaryLine;
-  
-        #       const buildLink = `[View Workflow Run #${githubRunNumber} (Attempt ${githubRunAttempt})](${githubWorkflowRunUrl})`;
-        #       const commentHeader = '### :rocket: Build Output :rocket:\n\n**Summary:**\n';
-        #       const commentBody = `${commentHeader}${decoratedSummaryLine}\n\n${markdownTable}\n\n${buildLink}\n`;
-        #       const { data: comments } = await github.rest.issues.listComments({
-        #         ...context.repo,
-        #         issue_number: context.issue.number
-        #       });
-        #       const existingComment = comments.find(comment => 
-        #         comment.user.login === 'github-actions[bot]' && 
-        #         comment.body.startsWith(commentHeader)
-        #       );
-        #       if (existingComment) {
-        #         await github.rest.issues.updateComment({
-        #             ...context.repo,
-        #             comment_id: existingComment.id,
-        #             body: commentBody
-        #         });
-        #       } else {
-        #         await github.rest.issues.createComment({
-        #             ...context.repo,
-        #             issue_number: context.issue.number,
-        #             body: commentBody
-        #         });
-        #       }
+        - name: Post scans as PR comment
+          uses: actions/github-script@v7
+          if: always()
+          continue-on-error: true
+          with:
+            script: |
+              const fs = require('fs');
+              const preCommitFile = process.env.PRE_COMMIT_FILE;
+
+              let preCommitOutput = '';
+              try {
+              preCommitOutput = fs.readFileSync(preCommitFile, 'utf8');
+              } catch (e) {
+              preCommitOutput = ':warning: No pre-commit output found.';
+              }
+
+              const githubWorkflowRunUrl = process.env.GITHUB_WORKFLOW_RUN_URL;
+              const githubRunNumber = process.env.GITHUB_RUN_NUMBER;
+              const githubRunAttempt = process.env.GITHUB_RUN_ATTEMPT;
+
+              const commentHeader = '### :white_check_mark: Pre-commit Validation Output :white_check_mark:\n\n';
+              const commentBody = `${commentHeader}\`\`\`\n${preCommitOutput}\n\`\`\`\n\n[View Workflow Run #${githubRunNumber} (Attempt ${githubRunAttempt})](${githubWorkflowRunUrl})`;
+
+              const { data: comments } = await github.rest.issues.listComments({
+              ...context.repo,
+              issue_number: context.issue.number
+              });
+              const existingComment = comments.find(comment => 
+              comment.user.login === 'github-actions[bot]' && 
+              comment.body.startsWith(commentHeader)
+              );
+              if (existingComment) {
+              await github.rest.issues.updateComment({
+                ...context.repo,
+                comment_id: existingComment.id,
+                body: commentBody
+              });
+              } else {
+              await github.rest.issues.createComment({
+                ...context.repo,
+                issue_number: context.issue.number,
+                body: commentBody
+              });
+              }
         # - name: Post Coverxygen summary as PR comment
         #   uses: actions/github-script@v7
         #   if: always()
