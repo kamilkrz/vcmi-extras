@@ -6,7 +6,11 @@ on:
       - 'vcmi-*'
   pull_request:
   workflow_dispatch:
-
+    
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write
 
 jobs:
   validate-json:
