@@ -21,6 +21,8 @@ jobs:
         shell: bash
     env:
       PRE_COMMIT_FILE: pre-commit.stdouterr
+      GITHUB_WORKFLOW_RUN_URL: >-
+        ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}
     steps:
         - name: Checkout repository
           uses: actions/checkout@v4
