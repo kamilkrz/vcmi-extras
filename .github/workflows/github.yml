@@ -87,18 +87,18 @@ jobs:
                 body: commentBody
               });
               }
-        - name: Post summary as PR comment
+        - name: Post as GHA summary
           uses: actions/github-script@v7
           if: always()
           continue-on-error: true
           with:
             script: |
               const fs = require('fs');
-              const summaryFile = process.env.SUMMARY_OUTPUT_FILE;
+              const preCommitFile = process.env.PRE_COMMIT_FILE;
 
               let summaryOutput = '';
               try {
-                summaryOutput = fs.readFileSync(summaryFile, 'utf8');
+                summaryOutput = fs.readFileSync(preCommitFile, 'utf8');
               } catch (e) {
                 summaryOutput = ':warning: No summary output found.';
               }
@@ -107,27 +107,8 @@ jobs:
               const githubRunNumber = process.env.GITHUB_RUN_NUMBER;
               const githubRunAttempt = process.env.GITHUB_RUN_ATTEMPT;
 
-              const commentHeader = '### :memo: Summary Output :memo:\n\n';
-              const commentBody = `${commentHeader}\`\`\`\n${summaryOutput}\n\`\`\`\n\n[View Workflow Run #${githubRunNumber} (Attempt ${githubRunAttempt})](${githubWorkflowRunUrl})`;
+              const summaryHeader = '### :memo: Summary Output :memo:\n\n';
+              const summaryBody = `${summaryHeader}\`\`\`\n${summaryOutput}\n\`\`\`\n\n[View Workflow Run #${githubRunNumber} (Attempt ${githubRunAttempt})](${githubWorkflowRunUrl})`;
 
-              const { data: comments } = await github.rest.issues.listComments({
-                ...context.repo,
-                issue_number: context.issue.number
-              });
-              const existingComment = comments.find(comment => 
-                comment.user.login === 'github-actions[bot]' && 
-                comment.body.startsWith(commentHeader)
-                  );
-              if (existingComment) {
-              await github.rest.issues.updateComment({
-                ...context.repo,
-                comment_id: existingComment.id,
-                body: commentBody
-              });
-              } else {
-              await github.rest.issues.createComment({
-                ...context.repo,
-                issue_number: context.issue.number,
-                body: commentBody
-              });
-              }
+              await github.summary.addRaw(summaryBody);
+              await github.summary.write();
