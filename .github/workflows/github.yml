@@ -45,6 +45,7 @@ jobs:
             # NOTE: Bash extending globing is used to exclude stdouterr files from pre-commit run
             shopt -s extglob
             pre-commit run \
+              --verbose \
               --color never \
               --all-files |&
               tee "${PRE_COMMIT_FILE}"
