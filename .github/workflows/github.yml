@@ -6,7 +6,7 @@ on:
       - 'vcmi-*'
   pull_request:
   workflow_dispatch:
-    
+
 permissions:
   contents: read
   pull-requests: write
@@ -114,5 +114,4 @@ jobs:
               const summaryHeader = '### :memo: Summary Output :memo:\n\n';
               const summaryBody = `${summaryHeader}\`\`\`\n${summaryOutput}\n\`\`\`\n\n[View Workflow Run #${githubRunNumber} (Attempt ${githubRunAttempt})](${githubWorkflowRunUrl})`;
 
-              await github.summary.addRaw(summaryBody);
-              await github.summary.write();
+              await core.summary.addRaw(summaryBody, true).write();
