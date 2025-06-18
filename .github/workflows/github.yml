@@ -14,6 +14,7 @@ permissions:
 
 jobs:
   validate-json:
+    name: Validate JSON files
     if: always()
     runs-on: ubuntu-latest
     defaults:
